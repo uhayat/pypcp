@@ -1170,12 +1170,12 @@ class BACKEND_STATUS(Enum):
 
 class SERVER_ROLE(Enum):
 	MAIN    = 1
-	SLAVE   = 2
+	REPLICA   = 2
 	PRIMARY = 3
 	STANDBY = 4
 
 	def __str__(self):
-		role_str = ['main', 'slave', 'primary', 'standby']
+		role_str = ['main', 'replica', 'primary', 'standby']
 		if self.value < 1 or self.value > 4:
 			return 'unknown'
 		return role_str[self.value]
