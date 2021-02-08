@@ -407,7 +407,7 @@ def output_watchdog_info_result(_pcp, pcpResInfo, verbose):
 		elif (cluster.quorumStatus == -1):
 			quorumStatus = 'QUORUM ABSENT'
 		elif (cluster.quorumStatus == -2):
-			quorumStatus = 'NO PRIMARY NODE'
+			quorumStatus = 'NO LEADER NODE'
 		else:
 			quorumStatus = 'UNKNOWN'
 
@@ -417,8 +417,8 @@ def output_watchdog_info_result(_pcp, pcpResInfo, verbose):
 		print(f'Quorum state         : {quorumStatus}')
 		print(f'Alive Remote Nodes   : {cluster.aliveNodeCount}')
 		print(f'VIP up on local node : {"YES" if cluster.escalated else "NO"}')
-		print(f'Primary Node Name     : {cluster.primaryNodeName}')
-		print(f'Primary Host Name     : {cluster.primaryHostName}\n')
+		print(f'Leader Node Name     : {cluster.leaderNodeName}')
+		print(f'Leader Host Name     : {cluster.leaderHostName}\n')
 
 		print('Watchdog Node Information \n')
 		for watchdog_info in cluster.nodeList:
@@ -434,8 +434,8 @@ def output_watchdog_info_result(_pcp, pcpResInfo, verbose):
 		print('{} {} {} {}\n'.format(
 			   cluster.remoteNodeCount + 1,
 			   'YES' if cluster.escalated else 'NO',
-			   cluster.primaryNodeName,
-			   cluster.primaryHostName))
+			   cluster.leaderNodeName,
+			   cluster.leaderHostName))
 
 		for watchdog_info in cluster.nodeList:
 			print('{} {} {} {} {} {}'.format(

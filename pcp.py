@@ -905,9 +905,12 @@ class PCP:
 			else:
 				wd_cluster_info.escalated = True
 
-			# TODO: 4.2 MASTER -> PRIMARY
-			wd_cluster_info.primaryNodeName = root[ 'MasterNodeName']
-			wd_cluster_info.primaryHostName = root[ 'MasterHostName']
+			if 'LeaderNodeName' in root:
+				wd_cluster_info.leaderNodeName = root[ 'LeaderNodeName']
+				wd_cluster_info.leaderHostName = root[ 'LeaderHostName']
+			else:
+				wd_cluster_info.leaderNodeName = root[ 'MasterNodeName']
+				wd_cluster_info.leaderHostName = root[ 'MasterHostName']
 
 			#Get watchdog nodes data
 			for nodeInfoValue in root[ 'WatchdogNodes']:
@@ -1147,8 +1150,8 @@ class PCPWDClusterInfo:
 		self.quorumStatus = -1
 		self.aliveNodeCount = -1
 		self.escalated = None
-		self.primaryNodeName = ''
-		self.primaryHostName = ''
+		self.leaderNodeName = ''
+		self.leaderHostName = ''
 		self.nodeCount = -1    # -> int
 		self.nodeList = list() # -> PCPWDNodeInfo
 
