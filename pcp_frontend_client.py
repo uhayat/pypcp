@@ -69,7 +69,10 @@ def _createArgParser(app_name):
 
 	parser.add_argument('-V', '--version', help='version', action='store_true')
 	parser.add_argument('-v', '--verbose', help='verbose', action='store_true')
-	parser.add_argument('-H', '--host', nargs=1, metavar=(('host')), help='pgpool-II host')
+	if sys.platform == 'win32':
+		parser.add_argument('-H', '--host', nargs=1, metavar=(('host')), help='pgpool-II host', required=True)
+	else:
+		parser.add_argument('-H', '--host', nargs=1, metavar=(('host')), help='pgpool-II host')
 	parser.add_argument('-p', '--port', nargs=1, metavar=(('port')), help='PCP port number')
 	if app_name == 'pcp_proc_info':
 		parser.add_argument('-P', '--process-id', nargs=1, metavar=('process_id'), help='PID of the child process to get information for (optional)')

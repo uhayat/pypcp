@@ -43,9 +43,11 @@ class PCP:
 		"""
 
 		fd = 0
-		# TODO: Handle Windows 
 		if hostname == None or hostname == '' or hostname == '/':
-			path = None
+			if sys.platform == 'win32':
+				self.pcp_internal_error(f'ERROR: hostname not provided')
+				self.connState = ConnStateType.BAD
+				return
 
 			try:
 				fd = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -54,6 +56,7 @@ class PCP:
 				self.connState = ConnStateType.BAD
 				return
 
+			path = None
 			if hostname == None or hostname == '':
 				path = UNIX_DOMAIN_PATH
 				hostname = path
