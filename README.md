@@ -20,24 +20,25 @@ Example Usage
 JSON Support
 ------------
 You can also results for each command. For above example JSON result will look like bellow:
+
     $ {'command_status': 'success', 'node_count': 2}
 
 Supported Commands
 ------------------
 Following commands are supported by pyPCP. Details about each command can be found at [PCP Commands](https://www.pgpool.net/docs/latest/en/html/pcp-commands.html)
-	* pcp_proc_count
-	* pcp_proc_info
-	* pcp_attach_node
-	* pcp_detach_node
-	* pcp_stop_pgpool
-	* pcp_pool_status
-	* pcp_node_count
-	* pcp_watchdog_info
-	* pcp_node_info
-	* pcp_stop_pgpool
-	* pcp_promote_node
-	* pcp_recovery_node
-	* pcp_health_check_stats
-	* pcp_reload_config
-    * pcp_set_backend_parameter
+* pcp_proc_count
+* pcp_proc_info
+* pcp_attach_node
+* pcp_detach_node
+* pcp_stop_pgpool
+* pcp_pool_status
+* pcp_node_count
+* pcp_watchdog_info
+* pcp_node_info
+* pcp_stop_pgpool
+* pcp_promote_node
+* pcp_recovery_node
+* pcp_health_check_stats
+* pcp_reload_config
+* pcp_set_backend_parameter
 

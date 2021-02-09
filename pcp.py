@@ -607,7 +607,6 @@ class PCP:
 		if value and value == 'CommandComplete':
 			index +=1 
 			process_count = 0
-			process_list = None
 
 			value, index = self._getNextString(buf, index)
 			if index == -1:
@@ -669,7 +668,6 @@ class PCP:
 			value, index = self._getNextString(buf, index)
 			if value:
 				index += 1
-				ci_size = int(value)
 
 			self._setResultStatus(ResultStateType.INCOMPLETE)
 			self.pcpResInfo.pcp_add_json_result('process_info', list())

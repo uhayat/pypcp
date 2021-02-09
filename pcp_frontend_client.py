@@ -129,7 +129,6 @@ def frontend_client(progname, argc,  argv):
 
 	_parser = _createArgParser(progname)
 	args = _parser.parse_args()
-	print(args)
 
 	if not progname in AllAppTypes:
 		sys.stderr.write(f'{progname} is a invalid PCP utility\n')
