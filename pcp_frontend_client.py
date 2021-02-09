@@ -3,6 +3,7 @@ import sys
 import time
 import argparse
 import datetime
+from enum import Enum
 from getpass import getpass
 from pcp import PCP
 from pcp import ConnStateType, ResultStateType
@@ -15,7 +16,7 @@ PACKAGE = 'PCP'
 VERSION = '1.0'
 RAND_MAX = 2147483647
 
-class PCP_UTILITIES:
+class PCP_UTILITIES(Enum):
 	PCP_ATTACH_NODE = 1
 	PCP_DETACH_NODE = 2
 	PCP_NODE_COUNT = 3
@@ -27,7 +28,9 @@ class PCP_UTILITIES:
 	PCP_RECOVERY_NODE = 9
 	PCP_STOP_PGPOOL = 10
 	PCP_WATCHDOG_INFO = 11
-	UNKNOWN = 12
+	PCP_HEALTH_CHECK_STATS = 12 
+	PCP_RELOAD_CONFIG = 13
+	UNKNOWN = 14
 
 class AppTypes:
 
@@ -56,7 +59,9 @@ AllAppTypes = {
 	'pcp_promote_node'  : AppTypes('pcp_promote_node', PCP_UTILITIES.PCP_PROMOTE_NODE, 'n:h:p:U:gwWvd', 'promote a node as new primary from pgpool-II'),
 	'pcp_recovery_node' : AppTypes('pcp_recovery_node', PCP_UTILITIES.PCP_RECOVERY_NODE, 'n:h:p:U:wWvd', 'recover a node'),
 	'pcp_stop_pgpool'   : AppTypes('pcp_stop_pgpool', PCP_UTILITIES.PCP_STOP_PGPOOL, 'm:h:p:U:wWvd', 'terminate pgpool-II'),
-	'pcp_watchdog_info' : AppTypes('pcp_watchdog_info', PCP_UTILITIES.PCP_WATCHDOG_INFO, 'n:h:p:U:wWvd', 'display a pgpool-II watchdog\'s information')
+	'pcp_watchdog_info' : AppTypes('pcp_watchdog_info', PCP_UTILITIES.PCP_WATCHDOG_INFO, 'n:h:p:U:wWvd', 'display a pgpool-II watchdog\'s information'),
+	'pcp_health_check_stats' : AppTypes('pcp_health_check_stats', PCP_UTILITIES.PCP_HEALTH_CHECK_STATS, 'n:h:p:U:wWvd', 'display a pgpool-II health check stats data'),
+	'pcp_reload_config' : AppTypes('pcp_reload_config', PCP_UTILITIES.PCP_RELOAD_CONFIG,'h:p:U:s:wWvd', 'reload a pgpool-II config file')
 	}
 
 current_app_type = None
@@ -89,6 +94,11 @@ def _createArgParser(app_name):
 						help='MODE can be "s|smart", "f|fast", or "i|immediate"',
 						choices=['s', 'smart', 'f', 'fast', 'i', 'immediate'],)
 
+	if app_name in ['pcp_stop_pgpool', 'pcp_reload_config']:
+		parser.add_argument('-s', '--scope', nargs=1, metavar=(('scope')), 
+						help='SCOPE can be "c|cluster", "l|local"',
+						choices=['c', 'cluster', 'l', 'local'],)
+
 	if app_name in ['pcp_detach_node', 'pcp_promote_node']:
 		parser.add_argument('-g', '--gracefully', help='promote gracefully(optional)', action='store_true')
 
@@ -98,7 +108,7 @@ def _createArgParser(app_name):
 	if app_name == 'pcp_watchdog_info':
 		parser.add_argument('-n', '--watchdog-id', nargs=1, metavar=(('watchdog_id')), 
 		help='ID of a other pgpool to get information for\nID 0 for the local watchdog\nIf omitted then get information of all watchdog nodes', required=True)
-	elif app_name in ['pcp_attach_node', 'pcp_detach_node', 'pcp_node_info', 'pcp_promote_node', 'pcp_recovery_node']:
+	elif app_name in ['pcp_attach_node', 'pcp_detach_node', 'pcp_node_info', 'pcp_promote_node', 'pcp_recovery_node', 'pcp_health_check_stats']:
 		parser.add_argument('-n', '--node-id', nargs=1, metavar=(('node_id')), help='ID of a backend node', required=True)
 
 	return parser
@@ -112,6 +122,7 @@ def frontend_client(progname, argc,  argv):
 	nodeID = -1
 	processID = 0
 	shutdown_mode = 's'
+	command_scope = 'l'
 	pcpResInfo = None
 
 	_pcp = PCP()
@@ -158,6 +169,17 @@ def frontend_client(progname, argc,  argv):
 				shutdown_mode = 'i'
 			else:
 				sys.stderr.write(f'{progname}: Invalid shutdown mode "{mode}", must be either "smart" "immediate" or "fast" \n')
+				exit(1)
+
+	if 'scope' in args:
+		if args.scope:
+			scope = args.scope[0]
+			if scope == 'c' or scope == 'cluster':
+				command_scope = 'c'
+			elif scope == 'l' or scope == 'local':
+				command_scope = 'l'
+			else:
+				sys.stderr.write(f'{progname}: Invalid command scope "{scope}", must be either "cluster" "local"\n')
 				exit(1)
 
 	if args.port:
@@ -208,6 +230,9 @@ def frontend_client(progname, argc,  argv):
 	elif (current_app_type.app_type == PCP_UTILITIES.PCP_NODE_INFO):
 		pcpResInfo = _pcp.pcp_node_info(nodeID)
 
+	elif (current_app_type.app_type == PCP_UTILITIES.PCP_HEALTH_CHECK_STATS):
+		pcpResInfo = _pcp.pcp_health_check_stats(nodeID)
+
 	elif (current_app_type.app_type == PCP_UTILITIES.PCP_POOL_STATUS):
 		pcpResInfo = _pcp.pcp_pool_status()
 
@@ -227,10 +252,13 @@ def frontend_client(progname, argc,  argv):
 		pcpResInfo = _pcp.pcp_recovery_node(nodeID)
 
 	elif (current_app_type.app_type == PCP_UTILITIES.PCP_STOP_PGPOOL):
-		pcpResInfo = _pcp.pcp_terminate_pgpool(shutdown_mode)
+		pcpResInfo = _pcp.pcp_terminate_pgpool(shutdown_mode, command_scope)
 
 	elif (current_app_type.app_type == PCP_UTILITIES.PCP_WATCHDOG_INFO):
 		pcpResInfo = _pcp.pcp_watchdog_info(nodeID)
+
+	elif (current_app_type.app_type == PCP_UTILITIES.PCP_RELOAD_CONFIG):
+		pcpResInfo = _pcp.pcp_reload_config(command_scope)
 
 	else:
 		# should never happen
@@ -251,21 +279,18 @@ def frontend_client(progname, argc,  argv):
 	else:
 		if (current_app_type.app_type == PCP_UTILITIES.PCP_NODE_COUNT):
 			output_nodecount_result(_pcp, pcpResInfo, args.verbose)
-
-		if (current_app_type.app_type == PCP_UTILITIES.PCP_NODE_INFO):
+		elif (current_app_type.app_type == PCP_UTILITIES.PCP_NODE_INFO):
 			output_nodeinfo_result(_pcp, pcpResInfo, args.verbose)
-
-		if (current_app_type.app_type == PCP_UTILITIES.PCP_POOL_STATUS):
+		elif (current_app_type.app_type == PCP_UTILITIES.PCP_POOL_STATUS):
 			output_poolstatus_result(pcpResInfo, args.verbose)
-
-		if (current_app_type.app_type == PCP_UTILITIES.PCP_PROC_COUNT):
+		elif (current_app_type.app_type == PCP_UTILITIES.PCP_PROC_COUNT):
 			output_proccount_result(pcpResInfo, args.verbose)
-
-		if (current_app_type.app_type == PCP_UTILITIES.PCP_PROC_INFO):
+		elif (current_app_type.app_type == PCP_UTILITIES.PCP_PROC_INFO):
 			output_procinfo_result(pcpResInfo, args.all, args.verbose)
-
 		elif (current_app_type.app_type == PCP_UTILITIES.PCP_WATCHDOG_INFO):
 			output_watchdog_info_result(_pcp, pcpResInfo, args.verbose)
+		elif (current_app_type.app_type == PCP_UTILITIES.PCP_HEALTH_CHECK_STATS):
+			output_health_check_stats_result(_pcp, pcpResInfo, args.verbose)
 
 def output_nodecount_result(_pcp, pcpResInfo, verbose):
 	if (verbose):
@@ -309,6 +334,66 @@ def output_nodeinfo_result(_pcp, pcpResInfo, verbose):
 			   backend_info.replication_state,
 			   backend_info.replication_sync_state,
 			   last_status_change))
+
+def output_health_check_stats_result(_pcp, pcpResInfo, verbose):
+	"""
+	Format and output health check stats
+	"""
+	stats = pcpResInfo.pcp_get_data(0)
+
+	if verbose:
+		titles = ("Node Id", "Host Name", "Port", "Status", "Role", "Last Status Change",
+								"Total Count", "Success Count", "Fail Count", "Skip Count", "Retry Count",
+								"Average Retry Count", "Max Retry Count", "Max Health Check Duration",
+								"Minimum Health Check Duration", "Average Health Check Duration",
+								"Last Health Check", "Last Successful Health Check",
+								"Last Skip Health Check", "Last Failed Health Check")
+		types = ("s", "s", "s", "s", "s", "s", "s", "s", "s", "s",
+							   "s", "s", "s", "s", "s", "s", "s", "s", "s", "s")
+		format_string = format_titles(titles, types)
+		print(format_string % (
+			   stats['node_id'],
+			   stats['hostname'],
+			   stats['port'],
+			   stats['status'],
+			   stats['role'],
+			   stats['last_status_change'],
+			   stats['total_count'],
+			   stats['success_count'],
+			   stats['fail_count'],
+			   stats['skip_count'],
+			   stats['retry_count'],
+			   stats['average_retry_count'],
+			   stats['max_retry_count'],
+			   stats['max_health_check_duration'],
+			   stats['min_health_check_duration'],
+			   stats['average_health_check_duration'],
+			   stats['last_health_check'],
+			   stats['last_successful_health_check'],
+			   stats['last_skip_health_check'],
+			   stats['last_failed_health_check']))
+	else:
+		print("%s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s\n".format(
+			   stats['node_id'],
+			   stats['hostname'],
+			   stats['port'],
+			   stats['status'],
+			   stats['role'],
+			   stats['last_status_change'],
+			   stats['total_count'],
+			   stats['success_count'],
+			   stats['fail_count'],
+			   stats['skip_count'],
+			   stats['retry_count'],
+			   stats['average_retry_count'],
+			   stats['max_retry_count'],
+			   stats['max_health_check_duration'],
+			   stats['min_health_check_duration'],
+			   stats['average_health_check_duration'],
+			   stats['last_health_check'],
+			   stats['last_successful_health_check'],
+			   stats['last_skip_health_check'],
+			   stats['last_failed_health_check']))
 
 def output_poolstatus_result(pcpResInfo, verbose):
 
@@ -501,6 +586,8 @@ def main(argc,  argv):
 	#progname  = 'pcp_stop_pgpool'
 	#progname  = 'pcp_promote_node'
 	#progname  = 'pcp_recovery_node'
+	#progname = 'pcp_health_check_stats'
+	#progname = 'pcp_reload_config'
 	frontend_client(progname, argc, argv)
 
 if __name__ == '__main__':

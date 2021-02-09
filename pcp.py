@@ -253,6 +253,11 @@ class PCP:
 					self._setResultStatus(ResultStateType.BAD_RESPONSE)
 				else:
 					self._process_node_info_response(buf, rsize)
+			elif toc == 'h':
+				if sentMsg != 'H':
+					self._setResultStatus(ResultStateType.BAD_RESPONSE)
+				else:
+					self._process_health_check_stats_response(buf, rsize)
 			elif toc == 'l':
 				if sentMsg != 'L':
 					self._setResultStatus(ResultStateType.BAD_RESPONSE)
@@ -270,6 +275,11 @@ class PCP:
 					self._process_command_complete_response(buf, rsize)
 			elif toc == 'a':
 				if sentMsg != 'A':
+					self._setResultStatus(ResultStateType.BAD_RESPONSE)
+				else:
+					self._process_command_complete_response(buf, rsize)
+			elif toc == 'z':
+				if sentMsg != 'Z':
 					self._setResultStatus(ResultStateType.BAD_RESPONSE)
 				else:
 					self._process_command_complete_response(buf, rsize)
@@ -369,7 +379,7 @@ class PCP:
 		self.connState = ConnStateType.NOT_CONNECTED
 		self.pcpConn = None
 
-	def pcp_terminate_pgpool(self, mode):
+	def pcp_terminate_pgpool(self, mode, command_scope):
 		"""
 		send terminate packet\n
 		return 0 on success, -1 otherwise
@@ -378,8 +388,10 @@ class PCP:
 		if self.PCPConnectionStatus() != ConnStateType.OK:
 			self.pcp_internal_error('invalid PCP connection')
 			return None
-		
-		self._PCPWrite('T'.encode(), 1)
+		if command_scope == 'l': #local only
+			self._PCPWrite('T'.encode(), 1)
+		else:
+			self._PCPWrite('t'.encode(), 1)
 		wsize = self.int_to_bytes(4 + 1)
 		self._PCPWrite(wsize, 4)
 		self._PCPWrite(mode.encode(), 1)
@@ -513,6 +525,79 @@ class PCP:
 			self.Pfdebug.write(f'DEBUG: send: tos="I", length={self.bytes_to_int(wsize)}\n')
 
 		return self._process_pcp_response('I')
+
+	def _process_health_check_stats_response(self, buf, len):
+		"""
+		Process health check response from PCP server.\n
+		pcpConn: connection to the server\n
+		buf:		returned data from server\n
+		len:		length of the data
+		"""
+		
+		self.pcpResInfo.pcp_add_json_result('command_status', 'success')
+		value, index = self._getNextString(buf, 0)
+
+		if value and value == 'CommandComplete':
+			index += 1
+			
+			stats = POOL_HEALTH_CHECK_STATS()
+
+			for attrib in stats.attrib_list:
+				value, index = self._getNextString(buf, index)
+				if value:
+					stats.add_stat(attrib, value)
+				index += 1
+
+			self.pcpResInfo.pcp_add_json_result('health_check_stats', stats.get_json())
+			self._setResultData(self.pcpResInfo,  stats)
+			self._setCommandSuccessful()
+		else:
+			self.pcp_internal_error(f'command failed with reason: "{buf}"')
+			self.pcpResInfo.pcp_add_json_result('command_status', 'failed')
+			self._setResultStatus(ResultStateType.BAD_RESPONSE)
+
+	def pcp_health_check_stats(self, nid):
+		"""
+		pcp_health_check_stats - get information of health check stats pointed by given argument\n
+		return structure of node information on success, -1 otherwise
+		"""
+
+		if self.PCPConnectionStatus() != ConnStateType.OK:
+			self.pcp_internal_error('invalid PCP connection')
+			return None
+
+		node_id = str(nid)
+
+		self._PCPWrite('H'.encode(), 1)
+		wsize = self.int_to_bytes(len(node_id) + 1 + 4)
+		self._PCPWrite(wsize, 4)
+		self._PCPWrite(node_id.encode() + NULL, len(node_id) + 1)
+		if self.PCPFlush() < 0:
+			return None
+		if self.Pfdebug:
+			self.Pfdebug.write(f'DEBUG: send: tos="H", length={self.bytes_to_int(wsize)}\n')
+
+		return self._process_pcp_response('H')
+
+	def pcp_reload_config(self, command_scope):
+		"""
+		reload pgpool-II config file
+		"""
+
+		if self.PCPConnectionStatus() != ConnStateType.OK:
+			self.pcp_internal_error('invalid PCP connection')
+			return None
+
+		self._PCPWrite('Z'.encode(), 1)
+		wsize = self.int_to_bytes(4 + 1)
+		self._PCPWrite(wsize, 4)
+		self._PCPWrite(command_scope.encode(), 1)
+		if self.PCPFlush() < 0:
+			return None
+		if self.Pfdebug:
+			self.Pfdebug.write(f'DEBUG: send: tos="Z", length={self.bytes_to_int(wsize)}\n')
+
+		return self._process_pcp_response('Z')
 
 	def _process_process_count_response(self, buf, length):
 		index = 0
@@ -1155,7 +1240,6 @@ class PCPWDClusterInfo:
 		self.nodeCount = -1    # -> int
 		self.nodeList = list() # -> PCPWDNodeInfo
 
-
 class BACKEND_STATUS(Enum):
 	CON_UNUSED = 0					# unused slot
 	CON_CONNECT_WAIT = 1			# waiting for connection starting
@@ -1339,4 +1423,47 @@ class PCPResultInfo:
 
 	def __str__(self):
 		return f'PCPResultInfo: Status:{self.resultStatus} ResultCount:{len(self.results)}'
+
+class POOL_HEALTH_CHECK_STATS:
+	"""
+	health check statistics report struct
+	"""
+	
+	def __init__(self):
+		self.attrib_list = ['node_id', 'hostname', 'port', 'status', 'role', 'last_status_change',
+							'total_count', 'success_count', 'fail_count', 'skip_count', 'retry_count',
+							'average_retry_count', 'max_retry_count', 'max_health_check_duration',
+							'min_health_check_duration', 'average_health_check_duration',
+							'last_health_check', 'last_successful_health_check', 'last_successful_health_check',
+							'last_skip_health_check', 'last_failed_health_check']
+		self.attrib_map = dict()
+		self.attrib_map['node_id'] = ''
+		self.attrib_map['hostname'] = ''
+		self.attrib_map['port'] = ''
+		self.attrib_map['status'] = ''
+		self.attrib_map['role'] = ''
+		self.attrib_map['last_status_change'] = ''
+		self.attrib_map['total_count'] = ''
+		self.attrib_map['success_count'] = ''
+		self.attrib_map['fail_count'] = ''
+		self.attrib_map['skip_count'] = ''
+		self.attrib_map['retry_count'] = ''
+		self.attrib_map['average_retry_count'] = ''
+		self.attrib_map['max_retry_count'] = ''
+		self.attrib_map['max_health_check_duration'] = ''
+		self.attrib_map['min_health_check_duration'] = ''
+		self.attrib_map['average_health_check_duration'] = ''
+		self.attrib_map['last_health_check'] = ''
+		self.attrib_map['last_successful_health_check'] = ''
+		self.attrib_map['last_skip_health_check'] = ''
+		self.attrib_map['last_failed_health_check'] = ''
+
+	def add_stat(self, attrib, value):
+		self.attrib_map[attrib] = value
+
+	def __getitem__(self, key):
+		return self.attrib_map[key]
+	
+	def get_json(self):
+		return self.attrib_map
 

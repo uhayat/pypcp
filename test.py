@@ -112,5 +112,19 @@ class PCPTest(unittest.TestCase):
         if self._show_json:
             print(pcpResInfo.pcp_get_json_data())
         
+    def test_health_check_stats(self):
+        pcpResInfo = self._pcp.pcp_health_check_stats(0)
+        self.assertTrue(pcpResInfo != None, 'pcpResInfo is None')
+        self.assertTrue(self._pcp.PCPResultStatus(pcpResInfo) == ResultStateType.COMMAND_OK, 'ResultStateType is not OK')
+        if self._show_json:
+            print(pcpResInfo.pcp_get_json_data())
+        
+    def test_pcp_reload_config(self):
+        pcpResInfo = self._pcp.pcp_reload_config('l')
+        self.assertTrue(pcpResInfo != None, 'pcpResInfo is None')
+        self.assertTrue(self._pcp.PCPResultStatus(pcpResInfo) == ResultStateType.COMMAND_OK, 'ResultStateType is not OK' )
+        if self._show_json:
+            print(pcpResInfo.pcp_get_json_data())
+        
 if __name__ == "__main__":
     unittest.main()
