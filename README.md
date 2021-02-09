@@ -19,7 +19,7 @@ Example Usage
 
 JSON Support
 ------------
-You can also results for each command. For above example JSON result will look like bellow:
+You can also get results for each command in JSON format. For above example JSON result will look like bellow:
 
     $ {'command_status': 'success', 'node_count': 2}
 
