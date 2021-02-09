@@ -43,7 +43,7 @@ class PCP:
 		"""
 
 		fd = 0
-		if hostname == None or hostname == '' or hostname == '/':
+		if hostname == None or hostname == '' or hostname.startswith('/'):
 			if sys.platform == 'win32':
 				self.pcp_internal_error(f'ERROR: hostname not provided')
 				self.connState = ConnStateType.BAD
