@@ -205,7 +205,7 @@ def frontend_client(argc,  argv):
 	args = _parser.parse_args()
 
 	if args.version:
-		sys.stderr.write(f'pcp_frontend_client ({PACKAGE}) {VERSION}\n')
+		sys.stderr.write(f'pcp_cli ({PACKAGE}) {VERSION}\n')
 		exit(0)
 		
 	progname = check_command(_parser, args)

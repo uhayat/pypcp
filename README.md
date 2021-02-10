@@ -19,7 +19,7 @@ Example Usage
 
 JSON Support
 ------------
-You can also get results for each command in JSON format. For above example JSON result will look like bellow:
+You can also get results for each command in JSON format. For above example JSON result will look like following:
 
     $ {'command_status': 'success', 'node_count': 2}
 
@@ -42,3 +42,32 @@ Following commands are supported by pyPCP. Details about each command can be fou
 * pcp_reload_config
 * pcp_set_backend_parameter
 
+
+PCP_CLI
+-------
+Based on pyPCP library, a utility is also available with name pcp_cli.py
+pcp_cli provide functionaliy of all pcp_* utilities provided with Pgpool-II in a single app. Multiple commands are available with there respective sub-commands/groups. 
+
+Following example show 'pcp_cli node count':
+
+    uhayat$ python pcp_cli.py node count -U postgres -H pgpool_host -v
+    Password: 
+    Node Count
+    ____________
+    2
+
+pcp_cli available command & sub-commands:
+
+- pool status
+- pool stop
+- pool reload-config
+- pool check-health-stats
+- node count
+- node info
+- node attach
+- node detach
+- node promote
+- node recovery
+- process count
+- process info
+- watchdog info
