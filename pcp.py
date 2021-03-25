@@ -125,7 +125,6 @@ class PCP:
 		#
 		if password == None or password == '':
 			password = self._PasswordFromFile(hostname, str(port), username)
-			print('password_from_file', password)
 		
 		if self._pcp_authorize(username, password) < 0:
 			self.pcpConn.pcp_close()
@@ -203,7 +202,6 @@ class PCP:
 		
 		while (True):
 			toc = self._PCPRead(1).decode()
-			#print('toc', toc)
 			if not toc:
 				self.pcp_internal_error('ERROR: unable to read data from socket.')
 				self._setResultStatus(ResultStateType.ERROR)
@@ -215,7 +213,6 @@ class PCP:
 				return self.pcpResInfo
 			
 			rsize = self.bytes_to_int(rsize)
-			#print('rsize', rsize)
 			buf = ''
 
 			buf = self._PCPRead(rsize - 4)
