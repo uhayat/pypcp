@@ -1,9 +1,11 @@
 #! /usr/local/opt/python/bin/python3.7
 import unittest
 import sys
-from pcp import PCP
-from pcp import ConnStateType, ResultStateType
-from pcp import SERVER_ROLE, BACKEND_STATUS, MAX_NUM_BACKENDS
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__),'..','src'))
+from pypcp import PCP
+from pypcp import ConnStateType, ResultStateType
+from pypcp import SERVER_ROLE, BACKEND_STATUS
 
 class PCPTest(unittest.TestCase):
 
