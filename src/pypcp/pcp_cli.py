@@ -614,11 +614,11 @@ def format_titles(titles, types):
 		formatbuf += f'{title}{(maxlen-len(title))*" "} : %{types[i]}\n'
 	return formatbuf
 
-def main(argc,  argv):
-	frontend_client(argc, argv)
-
-if __name__ == '__main__':
+def main():
 	try:
-		main(len(sys.argv),  sys.argv)
+		frontend_client(len(sys.argv),  sys.argv)
 	except KeyboardInterrupt:
 		print('\nOperation aborted')
+
+if __name__ == '__main__':
+	main()
