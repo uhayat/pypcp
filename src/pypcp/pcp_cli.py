@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import sys
 import time
@@ -5,9 +6,9 @@ import argparse
 import datetime
 from enum import Enum
 from getpass import getpass
-from pcp import PCP
-from pcp import ConnStateType, ResultStateType
-from pcp import SERVER_ROLE, BACKEND_STATUS, MAX_NUM_BACKENDS
+from .pcp import PCP
+from .pcp import ConnStateType, ResultStateType
+from .pcp import SERVER_ROLE, BACKEND_STATUS, MAX_NUM_BACKENDS
 
 PACKAGE = 'PCP'
 VERSION = '1.0'

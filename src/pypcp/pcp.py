@@ -8,8 +8,8 @@ import getpass
 import stat
 from pathlib import Path
 from enum import Enum
-from utils.pcp_md5 import pool_md5_hash, pool_md5_encrypt
-from utils.pcp_stream import UNIX_DOMAIN_PATH, PCP_CONNECTION
+from .utils.pcp_md5 import pool_md5_hash, pool_md5_encrypt
+from .utils.pcp_stream import UNIX_DOMAIN_PATH, PCP_CONNECTION
 
 MAX_USER_PASSWD_LEN   = 128
 MAX_NUM_BACKENDS      = 128
