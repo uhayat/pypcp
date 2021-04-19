@@ -21,10 +21,10 @@ Example Usage
 -------------
 .. code-block:: python
 
-    from pypcp import PCP
+    from pypcp import PCP, ResultStateType
 
     pcp = PCP()
-    pcp.pcp_connect('remote_ip', '9898', 'postgres', 'secret')
+    pcp.pcp_connect('remote_ip', 9898, 'postgres', 'secret')
     result = pcp.pcp_node_count()
     if result and pcp.PCPResultStatus(result) == ResultStateType.COMMAND_OK:
          print('Node Count  : ', result.pcp_get_data(0))
