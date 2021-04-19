@@ -1,7 +1,7 @@
 
-VERSION = (1, 0, 0, 'dev', 0)
+VERSION = (1, 0, 0, 'rc', 1)
 
-__version__ = '1.0.0-dev0'
+__version__ = '1.0.0-rc1'
 
 from .pcp import PCP
 from .pcp import PCPWDNodeInfo, PCPWDClusterInfo, BACKEND_STATUS, BACKEND_STATUS, SERVER_ROLE
